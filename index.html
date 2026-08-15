@@ -3,324 +3,381 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Square Wave Dörtlü Tuner (Sıfır Birim)</title>
-
+    <title>Signal Generator</title>
     <style>
-        html, body {
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            height: 100%;
-            width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
         }
 
         body {
-            display: block; 
-            min-height: 100%;
-            font-family: sans-serif;
-            background-color: #f0f0f0;
-            text-align: center; 
-            padding: 0 0; 
+            background-color: #0f0f11;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
 
-        #main-grid {
+        /* Rack Modül Kasası */
+        .rack-panel {
+            background: linear-gradient(145deg, #222428, #16171a);
+            border: 2px solid #2d3036;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+            width: 360px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+
+        /* Dijital Frekans Ekranı */
+        .display {
+            background-color: #08090a;
+            border: 1px solid #22252a;
+            border-radius: 12px;
             width: 100%;
-            overflow: hidden;
-            padding-top: 20; /* 20px yerine sadece 20 */
-        }
-
-        .tuner-unit {
-            float: left;
-            width: 49%; 
-            height: 450px; 
-            box-sizing: border-box; 
+            padding: 18px 10px;
             text-align: center;
-            padding: 10px 0;
+            box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.9);
         }
 
-        .frequency-display {
-            font-size: 20px; 
-            font-weight: bold;
-            color: #34495e;
-            margin: 5px 0; 
+        .freq-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #ff3b30;
+            text-shadow: 0 0 12px rgba(255, 59, 48, 0.4);
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: -1px;
         }
 
-        .dial-container {
+        .unit {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Ana Kadran (Knob) */
+        .knob-container {
             position: relative;
-            width: 200px; 
-            height: 200px;
-            margin: 10px auto; 
-            background-color: #ccc;
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            cursor: grab;
-            touch-action: none;
+            width: 190px;
+            height: 190px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 5px 0;
         }
 
-        .dial {
+        .knob-outer {
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            background: linear-gradient(145deg, #f0f0f0, #ccc);
+            background: radial-gradient(circle, #2a2d32 50%, #151619 100%);
+            border: 4px solid #34383f;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+            position: relative;
+            cursor: ns-resize;
         }
 
-        .center-dot {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 15px; 
-            height: 15px;
-            margin-top: -8px; 
-            margin-left: -8px; 
-            background-color: #34495e;
+        .knob-dial {
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
-        }
-
-        .indicator {
             position: absolute;
-            top: 0;
+            transform: rotate(-135deg);
+            transition: transform 0.04s linear;
+        }
+
+        /* Kırmızı İbre */
+        .pointer {
+            position: absolute;
+            top: 10px;
             left: 50%;
-            width: 8px; 
-            height: 35px; 
-            margin-left: -4px; 
-            background-color: #e74c3c;
-            transform-origin: bottom center;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 30px;
+            background-color: #ff3b30;
+            border-radius: 2px;
+            box-shadow: 0 0 10px #ff3b30;
         }
 
-        button.play-pause-btn {
-            padding: 10px 20px; 
-            font-size: 16px; 
-            margin-top: 10px; 
+        .knob-center {
+            position: absolute;
+            width: 58%;
+            height: 58%;
+            background: linear-gradient(145deg, #1c1e21, #282b30);
+            border-radius: 50%;
+            border: 1px solid #3e424a;
+            pointer-events: none;
+        }
+
+        /* Vites / Kademe Butonları */
+        .gear-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .label {
+            font-size: 0.7rem;
+            letter-spacing: 1.5px;
+            color: #888;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .gear-buttons {
+            display: flex;
+            background: #0d0e10;
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid #22252a;
+        }
+
+        .gear-btn {
+            flex: 1;
+            padding: 10px 0;
+            background: transparent;
             border: none;
-            border-radius: 5px;
-            background-color: #2ecc71; 
-            color: white;
+            color: #666;
+            font-weight: 700;
+            font-size: 0.75rem;
             cursor: pointer;
+            border-radius: 7px;
+            transition: all 0.2s ease;
         }
 
-        .play-pause-btn.paused {
-            background-color: #e74c3c;
+        .gear-btn.active {
+            background: #282b30;
+            color: #ff3b30;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
         }
-        
-        #volume-controls {
-            clear: both; 
-            width: 250px;
-            margin: 20px auto 0;
-            text-align: left;
+
+        /* Volume & Power */
+        .controls-row {
+            width: 100%;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .volume-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: #0d0e10;
+            height: 8px;
+            border-radius: 4px;
+            outline: none;
+            border: 1px solid #22252a;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #888;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            background: #ff3b30;
+        }
+
+        .power-btn {
+            padding: 12px 22px;
+            background: linear-gradient(145deg, #25282d, #1a1c1f);
+            border: 1px solid #383c44;
+            border-radius: 10px;
+            color: #777;
+            font-weight: 800;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s ease;
+            margin-top: 15px;
+        }
+
+        .power-btn.active {
+            color: #fff;
+            border-color: #ff3b30;
+            background: #ff3b30;
+            box-shadow: 0 0 16px rgba(255, 59, 48, 0.6);
         }
     </style>
 </head>
 <body>
 
-<div id="main-grid">
-
-    <div class="tuner-unit">
-        <div class="frequency-display" id="frequency-display-1">440.00 Hz - A4</div>
-        <div class="dial-container" id="dial-container-1">
-            <div class="dial" id="dial-1">
-                <div class="indicator" id="indicator-1"></div>
-                <div class="center-dot" id="center-dot-1"></div>
-            </div>
-        </div>
-        <button class="play-pause-btn" id="play-pause-btn-1">Pause ⏸</button>
+<div class="rack-panel">
+    <!-- Ekran -->
+    <div class="display">
+        <div class="freq-value" id="freqDisplay">440</div>
+        <div class="unit">Hz</div>
     </div>
 
-    <div class="tuner-unit">
-        <div class="frequency-display" id="frequency-display-2">440.00 Hz - A4</div>
-        <div class="dial-container" id="dial-container-2">
-            <div class="dial" id="dial-2">
-                <div class="indicator" id="indicator-2"></div>
-                <div class="center-dot" id="center-dot-2"></div>
+    <!-- Kadran -->
+    <div class="knob-container">
+        <div class="knob-outer" id="knob">
+            <div class="knob-dial" id="dial">
+                <div class="pointer"></div>
             </div>
+            <div class="knob-center"></div>
         </div>
-        <button class="play-pause-btn" id="play-pause-btn-2">Pause ⏸</button>
     </div>
 
-    <div class="tuner-unit">
-        <div class="frequency-display" id="frequency-display-3">440.00 Hz - A4</div>
-        <div class="dial-container" id="dial-container-3">
-            <div class="dial" id="dial-3">
-                <div class="indicator" id="indicator-3"></div>
-                <div class="center-dot" id="center-dot-3"></div>
-            </div>
+    <!-- Vitesler (3 Kademe) -->
+    <div class="gear-container">
+        <span class="label">Frekans Vitesi</span>
+        <div class="gear-buttons">
+            <button class="gear-btn" onclick="setGear(1)">1 (Low)</button>
+            <button class="gear-btn active" onclick="setGear(2)">2 (Mid)</button>
+            <button class="gear-btn" onclick="setGear(3)">3 (High)</button>
         </div>
-        <button class="play-pause-btn" id="play-pause-btn-3">Pause ⏸</button>
-    </div>
-    
-    <div class="tuner-unit">
-        <div class="frequency-display" id="frequency-display-4">440.00 Hz - A4</div>
-        <div class="dial-container" id="dial-container-4">
-            <div class="dial" id="dial-4">
-                <div class="indicator" id="indicator-4"></div>
-                <div class="center-dot" id="center-dot-4"></div>
-            </div>
-        </div>
-        <button class="play-pause-btn" id="play-pause-btn-4">Pause ⏸</button>
     </div>
 
+    <!-- Volume ve Power -->
+    <div class="controls-row">
+        <div class="volume-container">
+            <span class="label">Volume</span>
+            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5">
+        </div>
+        <button class="power-btn" id="powerBtn" onclick="togglePower()">POWER</button>
+    </div>
 </div>
-
-<div id="volume-controls">
-    <label for="volume-slider" style="font-weight: bold;">Genel Ses Şiddeti</label>
-    <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
-</div>
-<p style="color: #555; font-size: 12px; margin-top: 10px;">Ses gelmiyorsa lütfen telefonunuzun Medya Sesini açın.</p>
 
 <script>
-    const NUM_TUNERS = 4;
-    const A4_FREKANS = 440.0;
-    const YARIM_SES_SAYISI = 12;
-    const NOTA_ISIMLERI = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
+    let audioCtx = null;
+    let oscillator = null;
+    let gainNode = null;
+    let isPlaying = false;
 
-    const dialContainers = [];
-    const indicators = [];
-    const frequencyDisplays = [];
-    const playPauseBtns = [];
-    const oscilators = [];
-    const gainNodes = [];
-    let isPaused = [true, true, true, true];
+    let currentGear = 2;
+    let currentAngle = 0; // 0 - 270 derece
+    const MIN_ANGLE = 0;
+    const MAX_ANGLE = 270;
 
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const audioCtx = new AudioContext();
-    const masterGainNode = audioCtx.createGain();
-    masterGainNode.connect(audioCtx.destination);
-    
-    const volumeSlider = document.getElementById('volume-slider');
+    // 0-22.000 Hz aralığının 3 viteslik dağılımı
+    const gears = {
+        1: { min: 0, max: 500 },       // Low Range
+        2: { min: 500, max: 5000 },    // Mid Range
+        3: { min: 5000, max: 22000 }   // High Range
+    };
 
-    function frekansToNota(frekans) {
-        const n = 12 * Math.log2(frekans / A4_FREKANS) + 57;
-        const n_tam = Math.round(n);
-        const nota_indeksi = n_tam % YARIM_SES_SAYISI; 
-        const oktav = Math.floor(n_tam / YARIM_SES_SAYISI); 
-        return `${NOTA_ISIMLERI[nota_indeksi]}${oktav}`;
-    }
+    const dial = document.getElementById('dial');
+    const knob = document.getElementById('knob');
+    const freqDisplay = document.getElementById('freqDisplay');
+    const volumeSlider = document.getElementById('volume');
+    const powerBtn = document.getElementById('powerBtn');
 
-    function setupTuners() {
-        masterGainNode.gain.value = volumeSlider.value;
-        volumeSlider.addEventListener('input', () => {
-            masterGainNode.gain.value = volumeSlider.value;
-        });
+    let isDragging = false;
+    let startY = 0;
 
-        for (let i = 1; i <= NUM_TUNERS; i++) {
-            dialContainers.push(document.getElementById(`dial-container-${i}`));
-            indicators.push(document.getElementById(`indicator-${i}`));
-            frequencyDisplays.push(document.getElementById(`frequency-display-${i}`));
-            const btn = document.getElementById(`play-pause-btn-${i}`);
-            playPauseBtns.push(btn);
-            
-            btn.classList.add('paused');
-
-            const osc = audioCtx.createOscillator();
-            osc.type = 'square'; 
-            osc.frequency.setValueAtTime(A4_FREKANS, audioCtx.currentTime);
-            
-            const gNode = audioCtx.createGain();
-            gNode.gain.setValueAtTime(0, audioCtx.currentTime);
-            gNode.connect(masterGainNode);
-            
-            osc.connect(gNode);
-            
-            oscilators.push(osc);
-            gainNodes.push(gNode);
-
-            osc.start(); 
-        }
-
-        setupControls();
-        
-        for (let i = 0; i < NUM_TUNERS; i++) {
-             updateTunerDisplay(i, A4_FREKANS); 
-        }
-    }
-
-    function setupControls() {
-        playPauseBtns.forEach((btn, index) => {
-            btn.addEventListener('click', () => {
-                const tunerIndex = index;
-                const gNode = gainNodes[tunerIndex];
-
-                if (isPaused[tunerIndex]) {
-                    isPaused[tunerIndex] = false;
-                    btn.textContent = 'Çalıyor ▶️';
-                    btn.classList.remove('paused');
-                    
-                    gNode.gain.setValueAtTime(gNode.gain.value, audioCtx.currentTime);
-                    gNode.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.1); 
-
-                } else {
-                    isPaused[tunerIndex] = true;
-                    btn.textContent = 'Pause ⏸';
-                    btn.classList.add('paused');
-                    
-                    gNode.gain.setValueAtTime(gNode.gain.value, audioCtx.currentTime);
-                    gNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1); 
-                }
-            });
-        });
-        
-        dialContainers.forEach((container, index) => {
-            container.addEventListener('mousedown', (e) => startDrag(e, index));
-            container.addEventListener('touchstart', (e) => startDrag(e, index));
-        });
-    }
-
-    let activeTunerIndex = -1;
-    
-    function startDrag(e, index) {
-        if (isPaused[index]) return;
-        activeTunerIndex = index;
-        
-        const event = e.touches ? e.touches[0] : e;
-        
-        document.addEventListener('mousemove', drag);
+    // Kadran Sürükleme Mantığı (Mouse & Touch)
+    function startDrag(e) {
+        isDragging = true;
+        startY = e.clientY || (e.touches && e.touches[0].clientY);
+        document.addEventListener('mousemove', onDrag);
         document.addEventListener('mouseup', stopDrag);
-        document.addEventListener('touchmove', drag);
+        document.addEventListener('touchmove', onDrag);
         document.addEventListener('touchend', stopDrag);
     }
 
-    function drag(e) {
-        if (activeTunerIndex === -1) return;
-        const container = dialContainers[activeTunerIndex];
-        const rect = container.getBoundingClientRect();
-        
-        const event = e.touches ? e.touches[0] : e;
-        
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        
-        const x = event.clientX - centerX;
-        const y = event.clientY - centerY;
-        
-        let angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
-        if (angle < 0) angle += 360;
+    function onDrag(e) {
+        if (!isDragging) return;
+        const currentY = e.clientY || (e.touches && e.touches[0].clientY);
+        const deltaY = startY - currentY;
+        startY = currentY;
 
-        const minFreq = 300;
-        const maxFreq = 600;
-        const range = maxFreq - minFreq;
-        
-        const newFreq = minFreq + (angle / 360) * range; 
-        
-        oscilators[activeTunerIndex].frequency.setValueAtTime(newFreq, audioCtx.currentTime);
-        
-        indicators[activeTunerIndex].style.transform = `rotate(${angle}deg)`;
-        
-        updateTunerDisplay(activeTunerIndex, newFreq);
+        currentAngle += deltaY * 1.5;
+        if (currentAngle < MIN_ANGLE) currentAngle = MIN_ANGLE;
+        if (currentAngle > MAX_ANGLE) currentAngle = MAX_ANGLE;
+
+        updateUI();
     }
 
     function stopDrag() {
-        activeTunerIndex = -1;
-        document.removeEventListener('mousemove', drag);
+        isDragging = false;
+        document.removeEventListener('mousemove', onDrag);
         document.removeEventListener('mouseup', stopDrag);
-        document.removeEventListener('touchmove', drag);
+        document.removeEventListener('touchmove', onDrag);
         document.removeEventListener('touchend', stopDrag);
     }
-    
-    function updateTunerDisplay(index, freq) {
-        const note = frekansToNota(freq);
-        frequencyDisplays[index].textContent = `${freq.toFixed(2)} Hz - ${note}`;
+
+    knob.addEventListener('mousedown', startDrag);
+    knob.addEventListener('touchstart', startDrag);
+
+    function setGear(gear) {
+        currentGear = gear;
+        document.querySelectorAll('.gear-btn').forEach((btn, idx) => {
+            btn.classList.toggle('active', idx + 1 === gear);
+        });
+        updateUI();
     }
 
-    window.addEventListener('load', setupTuners);
+    function updateUI() {
+        dial.style.transform = `rotate(${currentAngle - 135}deg)`;
 
+        const range = gears[currentGear];
+        const freq = Math.round(range.min + (currentAngle / MAX_ANGLE) * (range.max - range.min));
+        
+        freqDisplay.textContent = freq;
+
+        if (oscillator && isPlaying) {
+            oscillator.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.01);
+        }
+    }
+
+    function togglePower() {
+        if (!isPlaying) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+
+            oscillator.type = 'sine';
+            const freq = parseInt(freqDisplay.textContent);
+            oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.start();
+            isPlaying = true;
+            powerBtn.classList.add('active');
+        } else {
+            oscillator.stop();
+            audioCtx.close();
+            isPlaying = false;
+            powerBtn.classList.remove('active');
+        }
+    }
+
+    volumeSlider.addEventListener('input', (e) => {
+        if (gainNode && isPlaying) {
+            gainNode.gain.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.01);
+        }
+    });
+
+    updateUI();
 </script>
+
 </body>
 </html>
